@@ -4,7 +4,7 @@ program gemini
 !------THIS IS THE MAIN PROGRAM FOR GEMINI3D
 !----------------------------------------------------------
 
-use phys_consts, only : lnchem
+use phys_consts, only : lnchem, lwave
 use grid
 use temporal, only : dt_comm,dateinc
 use neutral, only : neutral_atmos,make_dneu,neutral_perturb,clear_dneu
@@ -50,9 +50,10 @@ real(wp), dimension(:,:,:), allocatable :: rhom,v1,v2,v3          !inductive aux
 real(wp), dimension(:,:,:,:), allocatable :: nn                   !neutral density array
 real(wp), dimension(:,:,:), allocatable :: Tn,vn1,vn2,vn3         !neutral temperature and velocities
 real(wp), dimension(:,:,:), allocatable :: Phiall                 !full-grid potential solution.  To store previous time step value
+real(wp), dimension(:,:,:), allocatable :: iver                   !integrated volume emission rate of aurora calculated by GLOW
 
 !TEMPORAL VARIABLES
-real(wp) :: t=0d0,dt,dtprev      !time from beginning of simulation (s) and time step (s)
+real(wp) :: t=0.0_wp,dt,dtprev      !time from beginning of simulation (s) and time step (s)
 real(wp) :: tout,dtout    !time for next output and time between outputs
 real(wp) :: tstart,tfin   !temp. vars. for measuring performance of code blocks
 integer :: it,isp        !time and species loop indices
@@ -78,6 +79,12 @@ integer :: flagE0file                ! flag toggling electric field (potential B
 real(wp) :: dtE0                      ! time interval between electric field file inputs
 character(:), allocatable :: E0dir   ! directory containing electric field file input data
 
+!GLOW MODULE INPUT VARIABLES
+integer :: flagglow                     !flag toggling GLOW module run (include aurora) (0 - no; 1 - yes)
+real(wp) :: dtglow                      !time interval between GLOW runs (s)
+real(wp) :: dtglowout                   !time interval between GLOW auroral outputs (s)
+
+!FOR HANDLING OUTPUT
 integer :: argc
 character(256) :: argv
 !----------------------------------------------------------
@@ -98,7 +105,7 @@ infile = trim(argv)
 
 call read_configfile(infile, ymd,UTsec0,tdur,dtout,activ,tcfl,Teinf,potsolve,flagperiodic,flagoutput,flagcap, &
                      indatsize,indatgrid,flagdneu,interptype,sourcemlat,sourcemlon,dtneu,drhon,dzn,sourcedir,flagprecfile, &
-                     dtprec,precdir,flagE0file,dtE0,E0dir)
+                     dtprec,precdir,flagE0file,dtE0,E0dir,flagglow,dtglow,dtglowout)
 
 !LOAD UP THE GRID STRUCTURE/MODULE VARS. FOR THIS SIMULATION
 call read_grid(indatsize,indatgrid,flagperiodic,x)     !read in a previously generated grid from filenames listed in input file
@@ -135,6 +142,11 @@ if (myid==0) then
   allocate(Phiall(lx1,lx2,lx3all))
 end if
 
+!ALLOCATE MEMORY FOR AURORAL EMISSIONS, IF CALCULATED
+if(flagglow==1) then
+  allocate(iver(lx2,lx3,lwave))
+end if
+
 
 !LOAD ICS AND DISTRIBUTE TO WORKERS (REQUIRES GRAVITY FOR INITIAL GUESSING)
 call input_plasma(x%x1,x%x2,x%x3all,indatsize,ns,vs1,Ts)
@@ -158,6 +170,10 @@ end if
 E1=0d0; E2=0d0; E3=0d0;
 vs2=0d0; vs3=0d0;
 
+!INITIALIZE AURORAL EMISSION MAP
+if(flagglow==1) then
+  iver=0.0_wp
+end if
 
 !MAIN LOOP
 UTsec=UTsec0; it=1; t=0d0; tout=t;
@@ -207,6 +223,7 @@ do while (t<tdur)
     end if
   end if
 
+
   !POTENTIAL SOLUTION
   call cpu_time(tstart)
   call electrodynamics(it,t,dt,nn,vn2,vn3,Tn,sourcemlat,ns,Ts,vs1,B1,vs2,vs3,x, &
@@ -220,8 +237,8 @@ do while (t<tdur)
 
   !UPDATE THE FLUID VARIABLES
   call cpu_time(tstart)
-  call fluid_adv(ns,vs1,Ts,vs2,vs3,J1,E1,Teinf,t,dt,x,nn,vn1,vn2,vn3,Tn,activ(2),activ(1),ymd,UTsec, &
-                 flagprecfile,dtprec,precdir)
+  call fluid_adv(ns,vs1,Ts,vs2,vs3,J1,E1,Teinf,t,dt,x,nn,vn1,vn2,vn3,Tn,iver,activ(2),activ(1),ymd,UTsec, &
+                 flagprecfile,dtprec,precdir,flagglow,dtglow)
   call cpu_time(tfin)
   if (myid==0) then
     write(*,*) 'Multifluid total solve time:  ',tfin-tstart
@@ -262,6 +279,9 @@ if (myid==0) then
   deallocate(Phiall)
 end if
 
+if (flagglow==1) then
+  deallocate(iver)
+end if
 
 !DEALLOCATE MODULE VARIABLES (MAY HAPPEN AUTOMATICALLY IN F2003???)
 call clear_grid(x)

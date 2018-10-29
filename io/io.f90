@@ -20,7 +20,7 @@ contains
   subroutine read_configfile(infile,ymd,UTsec0,tdur,dtout,activ,tcfl,Teinf,potsolve,flagperiodic, &
                      flagoutput,flagcap,indatsize,indatgrid,flagdneu,interptype, &
                      sourcemlat,sourcemlon,dtneu,drhon,dzn,sourcedir,flagprecfile,dtprec,precdir, &
-                     flagE0file,dtE0,E0dir)
+                     flagE0file,dtE0,E0dir,flagglow,dtglow,dtglowout)
 
     !------------------------------------------------------------
     !-------READS THE INPUT CONFIGURAITON FILE ANDE ASSIGNS
@@ -46,6 +46,8 @@ contains
     character(:), allocatable, intent(out) :: indatsize,indatgrid, sourcedir, precdir, E0dir
     integer, intent(out) :: flagE0file
     real(wp), intent(out) :: dtE0
+    integer, intent(out) :: flagglow
+    real(wp), intent(out) :: dtglow, dtglowout
 
 
     character(256) :: buf
@@ -140,6 +142,21 @@ contains
     else                         !just set results to something
       dtE0=0._wp
       E0dir=''
+    end if
+
+    !GLOW ELECTRON TRANSPORT INFORMATION
+    read(u,*) flagglow
+    if (flagglow==1) then
+      read(u,*) dtglow
+      read(u,*) dtglowout
+      if (myid == 0) then
+        print *, 'GLOW enabled for auroral emission calculations.'
+        print *, 'GLOW electron transport calculation cadence (s): ', dtglow
+        print *, 'GLOW auroral emission output cadence (s): ', dtglowout
+      end if
+    else
+      dtglow=0._wp
+      dtglowout=0._wp
     end if
 
     close(u)

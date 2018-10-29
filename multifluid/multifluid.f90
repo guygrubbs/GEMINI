@@ -17,8 +17,8 @@ integer, parameter :: lprec=2    !number of precipitating electron populations
 
 contains
 
-  subroutine fluid_adv(ns,vs1,Ts,vs2,vs3,J1,E1,Teinf,t,dt,x,nn,vn1,vn2,vn3,Tn,f107,f107a,ymd,UTsec, &
-                       flagprecfile,dtprec,precdir)    !J1 needed for heat conduction; E1 for momentum equation
+  subroutine fluid_adv(ns,vs1,Ts,vs2,vs3,J1,E1,Teinf,t,dt,x,nn,vn1,vn2,vn3,Tn,iver,f107,f107a,ymd,UTsec, &
+                       flagprecfile,dtprec,precdir,flagglow,dtglow)    !J1 needed for heat conduction; E1 for momentum equation
 
     !------------------------------------------------------------
     !-------THIS SUBROUTINE ADVANCES ALL OF THE FLUID VARIABLES 
@@ -43,6 +43,10 @@ contains
     integer, intent(in) :: flagprecfile
     real(wp), intent(in) :: dtprec
     character(*), intent(in) :: precdir
+
+    integer, intent(in) :: flagglow
+    real(wp), intent(in) :: dtglow
+    real(wp), dimension(:,:,:), intent(inout) :: iver
 
     integer :: isp
     real(wp) :: tstart,tfin
