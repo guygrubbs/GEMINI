@@ -40,7 +40,7 @@ subroutine glow_run(Eo,Q,alt,Nn,Tn,Ns,Ts,PO,PNO,PN2,PO2,PH,EHEATING,IDENS)
   use cglow,only: iscale,jlocal,kchem,xuvfac
   use cglow,only: sza,dip,efrac,ierr
   use cglow,only: zz,zo,zn2,zo2,zns,znd,zno,ztn,ze,zti,zte
-  use cglow,only: ener,del,phitop,phitop2,wave1,wave2,sflux,pespec,sespec,uflx,dflx,sion
+  use cglow,only: ener,del,phitop,wave1,wave2,sflux,pespec,sespec,uflx,dflx,sion
   use cglow,only: photoi,photod,phono,aglw,tei,tpi,tir,ecalc,zxden,zeta,zceta,eheat,data_dir
   use cglow,only: first_run
 
@@ -48,11 +48,12 @@ subroutine glow_run(Eo,Q,alt,Nn,Tn,Ns,Ts,PO,PNO,PN2,PO2,PH,EHEATING,IDENS)
   
   character(len=1024) :: iri90_dir
 
-  real(8), dimension(:), intent(in) :: Eo,Q 
-  real(8), dimension(:), intent(in) :: alt,Tn           ! glow height coordinate in km (jmax)
-  real(8), dimension(:,:), intent(in) :: Nn
-  real(8), dimension(:,:), intent(in) :: Ns,Ts
-  real(8), dimension(:), intent(out) :: PO,PN2,PO2,PNO,PH,EHEATING,IDENS
+  real(wp), dimension(:), intent(in) :: Eo,Q 
+  real(wp), dimension(:), intent(in) :: alt,Tn           ! glow height coordinate in km (jmax)
+  real(wp), dimension(:,:), intent(in) :: Nn
+  real(wp), dimension(:,:), intent(in) :: Ns,Ts
+  real(wp), dimension(:), intent(out) :: PO,PN2,PO2,PNO,PH,EHEATING,IDENS
+  real(wp), dimension(nbins) :: phitoptmp = 0.0_wp
   
   integer :: j = 0
   logical :: first_out = .true.
@@ -83,12 +84,10 @@ subroutine glow_run(Eo,Q,alt,Nn,Tn,Ns,Ts,PO,PNO,PN2,PO2,PH,EHEATING,IDENS)
 !
 ! Hard coded solution, future = pass ec and ef array to maxt assuming > 2
 ! populations
-  ec=Eo(1)
-  ef=Q(1)
-  ec1=Eo(2)
-  ef1=Q(2)
-  call maxt2 (ef,ec,ef1,ec1,ener,del,nbins,phitop,phitop2)
-  phitop=phitop+phitop2
+  do j = 1, size(Eo,1)
+    call maxt(Eo(j),Q(j),ener,del,nbins,0,0,0,phitoptmp)
+    phitop=phitop+phitoptmp
+  end do
 !
 ! Set variables for Rocket B launch and given densities from GEMINI
 !
