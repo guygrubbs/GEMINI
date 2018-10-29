@@ -73,14 +73,8 @@ contains
     real(wp), dimension(:), allocatable :: b
     real(wp) :: tstart,tfin
     type (DMUMPS_STRUC) mumps_par
-    integer :: myid, ierr
 
     real(wp), dimension(size(srcterm,1),size(srcterm,2),size(srcterm,3)) :: elliptic3D_curv
-
-
-
-    call MPI_COMM_RANK(MPI_COMM_WORLD, myid, ierr)
-
 
     !ONLY ROOT NEEDS TO ASSEMBLE THE MATRIX
     if (myid==0) then
@@ -105,7 +99,7 @@ contains
 
 
       !COMPUTE AUXILIARY COEFFICIENTS
-      write(*,*) 'Prepping coefficients for elliptic equation...'    
+      write(*,*) 'Prepping coefficients for elliptic==ation...'    
       gradsig01=grad3D1(sig0,x,1,lx1,1,lx2,1,lx3)
       gradsigP2=grad3D2(sigP,x,1,lx1,1,lx2,1,lx3)
       gradsigP3=grad3D3(sigP,x,1,lx1,1,lx2,1,lx3)
@@ -186,7 +180,7 @@ contains
             b(iPhi)=Vmaxx3(ix1,ix2)
             ient=ient+1
           else                      !INTERIOR
-            !ix1,ix2,ix3-1 grid point in ix1,ix2,ix3 equation
+            !ix1,ix2,ix3-1 grid point in ix1,ix2,ix3==ation
             ir(ient)=iPhi
             ic(ient)=iPhi-lx1*lx2
             M(ient)=Bc(ix1,ix2,ix3)/x%dx3all(ix3)/x%dx3iall(ix3)-Ec(ix1,ix2,ix3)/(x%dx3all(ix3+1)+x%dx3all(ix3))
@@ -252,7 +246,7 @@ contains
 
 
     !LOAD OUR PROBLEM
-    if ( mumps_par%MYID==0 ) then
+    if ( myid==0 ) then
       mumps_par%N=lPhi
       mumps_par%NZ=lent
       allocate( mumps_par%IRN ( mumps_par%NZ ) )
@@ -281,7 +275,7 @@ contains
     !STORE PERMUTATION USED, SAVE RESULTS, CLEAN UP MUMPS ARRAYS
     !(can save ~25% execution time and improves scaling with openmpi
     ! ~25% more going from 1-2 processors)
-    if ( mumps_par%MYID==0 ) then
+    if ( myid==0 ) then
       write(*,*) 'Now organizing results...'
 
       if (perflag .and. it==1) then
@@ -346,12 +340,8 @@ contains
     real(wp), dimension(:), allocatable :: b
     real(wp) :: tstart,tfin
     type(DMUMPS_STRUC) mumps_par
-    integer :: myid, ierr
 
     real(wp), dimension(size(SigP2,1),size(SigP2,2)) :: elliptic2D_pol_conv_curv
-
-
-    call MPI_COMM_RANK(MPI_COMM_WORLD, myid, ierr)
 
 
     !ONLY ROOT NEEDS TO ASSEMBLE THE MATRIX
@@ -480,7 +470,7 @@ contains
             end if
 
 
-            !!!ix2,ix3-1 grid point in ix2,ix3 equation
+            !!!ix2,ix3-1 grid point in ix2,ix3==ation
             ir(ient)=iPhi
             ic(ient)=iPhi-lx2
 
@@ -732,7 +722,7 @@ contains
 
 
     !LOAD OUR PROBLEM
-    if ( mumps_par%MYID==0 ) then
+    if ( myid==0 ) then
       mumps_par%N=lPhi
       mumps_par%NZ=lent
       allocate( mumps_par%IRN ( mumps_par%NZ ) )
@@ -765,7 +755,7 @@ contains
     !STORE PERMUTATION USED, SAVE RESULTS, CLEAN UP MUMPS ARRAYS
     !(can save ~25% execution time and improves scaling with openmpi
     ! ~25% more going from 1-2 processors)
-    if ( mumps_par%MYID==0 ) then
+    if ( myid==0 ) then
       write(*,*) 'Now organizing results...'
 
       if (perflag .and. it==1) then
@@ -832,16 +822,12 @@ contains
     real(wp), dimension(:), allocatable :: b
     real(wp) :: tstart,tfin
     type(DMUMPS_STRUC) mumps_par
-    integer :: myid, ierr
 
     integer :: lcount,ix2tmp,ix3tmp
 
     real(wp), dimension(size(SigP,1),size(SigP,2)+1) :: tmpresults
 
     real(wp), dimension(size(SigP,1),size(SigP,2)) :: elliptic2D_pol_conv_curv_periodic2
-
-
-    call MPI_COMM_RANK(MPI_COMM_WORLD, myid, ierr)    !is this obviated by the mpi module variables???
 
 
     !ONLY ROOT NEEDS TO ASSEMBLE THE MATRIX
@@ -971,7 +957,7 @@ contains
             end if
 
 
-            !ix2,ix3-1 grid point in ix2,ix3 equation
+            !ix2,ix3-1 grid point in ix2,ix3==ation
             ir(ient)=iPhi
 !            ic(ient)=iPhi-lx2
             ix3tmp=mod(ix3-1-1+lx3,lx3)+1
@@ -1260,7 +1246,7 @@ contains
 
 
     !LOAD OUR PROBLEM
-    if ( mumps_par%MYID==0 ) then
+    if ( myid==0 ) then
       mumps_par%N=lPhi
       mumps_par%NZ=lent
       allocate( mumps_par%IRN ( mumps_par%NZ ) )
@@ -1289,7 +1275,7 @@ contains
     !STORE PERMUTATION USED, SAVE RESULTS, CLEAN UP MUMPS ARRAYS
     !(can save ~25% execution time and improves scaling with openmpi
     ! ~25% more going from 1-2 processors)
-    if ( mumps_par%MYID==0 ) then
+    if ( myid==0 ) then
       write(*,*) 'Now organizing results...'
 
       if (perflag .and. it==1) then
@@ -1347,12 +1333,8 @@ contains
     real(wp), dimension(:), allocatable :: b
     real(wp) :: tstart,tfin
     type (DMUMPS_STRUC) mumps_par
-    integer :: myid, ierr
 
     real(wp), dimension(size(sig0,1),1,size(sig0,3)) :: elliptic2D_nonint_curv
-
-
-    call MPI_COMM_RANK(MPI_COMM_WORLD, myid, ierr)
 
 
     !ONLY ROOT NEEDS TO ASSEMBLE THE MATRIX
@@ -1467,7 +1449,7 @@ contains
             b(iPhi)=Vmaxx3(ix1,1)
             ient=ient+1
           else                      !INTERIOR
-            !ix1,ix3-1 grid point in ix1,ix3 equation
+            !ix1,ix3-1 grid point in ix1,ix3==ation
             ir(ient)=iPhi
             ic(ient)=iPhi-lx1
             M(ient)=sigPh3(ix1,ix3)/(x%dx3iall(ix3)*x%dx3all(ix3))
@@ -1515,7 +1497,7 @@ contains
 
 
     !LOAD OUR PROBLEM
-    if ( mumps_par%MYID==0 ) then
+    if ( myid==0 ) then
       mumps_par%N=lPhi
       mumps_par%NZ=lent
       allocate( mumps_par%IRN ( mumps_par%NZ ) )
@@ -1550,7 +1532,7 @@ contains
     !(can save ~25% execution time and improves scaling with openmpi
     ! ~25% more going from 1-2 processors).  WOW - this halves execution
     ! time on some big 2048*2048 solves!!!
-    if ( mumps_par%MYID==0 ) then
+    if ( myid==0 ) then
       write(*,*) 'Now organizing results...'
 
       if (perflag .and. it==1) then
@@ -1597,11 +1579,8 @@ contains
     real(wp), dimension(:), allocatable :: b
     real(wp) :: tstart,tfin
     type (DMUMPS_STRUC) mumps_par
-    integer :: myid, ierr
     real(wp), dimension(size(rho,1),size(rho,2)) :: poisson2D
 
-
-    call MPI_COMM_RANK(MPI_COMM_WORLD, myid, ierr)
 
     if (myid==0) then
     !------------------------------------------------------------
@@ -1649,7 +1628,7 @@ contains
           b(iPhi)=Vmaxx2(ix1)
           ient=ient+1
         else                      !INTERIOR
-          !ix1,ix2-1 grid point in ix1,ix2 equation
+          !ix1,ix2-1 grid point in ix1,ix2==ation
           ir(ient)=iPhi
           ic(ient)=iPhi-lx1
           M(ient)=1.0
@@ -1696,7 +1675,7 @@ contains
 
 
     !LOAD OUR PROBLEM (ROOT ONLY)
-    if ( mumps_par%MYID .eq. 0 ) then
+    if ( myid == 0 ) then
       mumps_par%N=lPhi
       mumps_par%NZ=lent
       allocate( mumps_par%IRN ( mumps_par%NZ ) )
@@ -1728,7 +1707,7 @@ contains
     !STORE PERMUTATION USED, SAVE RESULTS, CLEAN UP MUMPS ARRAYS
     !(can save ~25% execution time and improves scaling with openmpi
     ! ~25% more going from 1-2 processors)
-    if ( mumps_par%MYID .eq. 0 ) then
+    if ( myid == 0 ) then
       mumps_perm=mumps_par%SYM_PERM
       poisson2D=reshape(mumps_par%RHS/dx1**2,[lx1,lx2])
 
@@ -1750,10 +1729,6 @@ contains
     !-------A FN. THAT ALLOWS WORKERS TO ENTER MUMPS SOLVES
     !------------------------------------------------------------
     type(DMUMPS_STRUC) mumps_par
-    integer :: myid, ierr
-
-
-    call MPI_COMM_RANK(MPI_COMM_WORLD, myid, ierr)
 
 
     !FIRE UP MUMPS
