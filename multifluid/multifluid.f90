@@ -1,6 +1,6 @@
 module multifluid
 
-use phys_consts, only : gammas,kB,ms,mindensdiv,mindens,mindensnull
+use phys_consts, only : wp,gammas,kB,ms,mindensdiv,mindens,mindensnull
 use mpimod
 use grid
 use ionization

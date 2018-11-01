@@ -1,5 +1,6 @@
 module glow
 
+use phys_consts, only : wp
 use cglow,only: cglow_init   ! subroutine to allocate use-associated variables
 use cglow,only: jmax,nbins,lmax,nmaj,nei,nex,nw,nc,nst
 use cglow,only: idate,ut,glat,glong,f107a,f107,f107p,ap,ef,ec,ef1,ec1
@@ -7,13 +8,15 @@ use cglow,only: iscale,jlocal,kchem,xuvfac
 use cglow,only: sza,dip,efrac,ierr
 use cglow,only: zz,zo,zn2,zo2,zns,znd,zno,ztn,ze,zti,zte
 use cglow,only: ener,del,phitop,wave1,wave2,sflux,pespec,sespec,uflx,dflx,sion
-use cglow,only: photoi,photod,phono,aglw,ecalc,zxden,zeta,zceta,eheat
+use cglow,only: photoi,photod,phono,aglw,ecalc,zxden,zeta,zceta,eheat,vcb
 use cglow,only: data_dir
 implicit none
 
+logical :: first_call = .true.
+
 contains
 
-  subroutine glow_run(W0,PhiWmWm2,doy,UTsec,glat,glon,alt,nn,Tn,ns,Ts,ionrate,eheating)
+  subroutine glow_run(W0,PhiWmWm2,doy,UTsec,xlat,xlon,alt,nn,Tn,ns,Ts,xf107,xf107a,ionrate,eheating,iver)
   
   ! This software is part of the GLOW model.  Use is governed by the Open Source
   ! Academic Research License Agreement contained in the file glowlicense.txt.
@@ -56,20 +59,17 @@ contains
     real(wp), dimension(nbins) :: phitoptmp = 0.0_wp
     
     integer :: j
-    logical :: first = .true.
     character(len=1024) :: iri90_dir
+
     data_dir    ='data/'
     iri90_dir   ='data/iri90'
   ! Execute:
   ! Allocate arrays in other modules (formerly in common blocks):
   !
-    if(first) then
-      first = .false.
+    if(first_call) then
+      first_call = .false.
       jmax=size(alt,1)
       call cglow_init
-      call cglow_reset
-    else
-      call cglow_reset
     end if
   !
   ! Set electron energy grid:
@@ -87,13 +87,13 @@ contains
   !
   ! Set variables for Rocket B launch and given densities from GEMINI
   !
-    glat = 67.01
-    glong = 213.58
+    glat = xlat
+    glong = xlon
     idate = 2017061
-    ut = 28800.
-    f107 = 79.
-    f107p = 79.
-    f107a = 79.
+    ut = UTsec
+    f107 = xf107
+    f107p = xf107
+    f107a = xf107a
     ap = 5.
     kchem = 4.
     jlocal = 0.
@@ -101,11 +101,11 @@ contains
   ! Convert densities and altitudes into 
   !
     zz(:)  = alt(:)*1.0d2
-    zo(:)  = NN(:,1)/1.0d6
-    zo2(:) = NN(:,3)/1.0d6
-    zn2(:) = NN(:,2)/1.0d6
-    zno(:) = NN(:,6)/1.0d6
-    zns(:) = NN(:,5)/1.0d6
+    zo(:)  = nn(:,1)/1.0d6
+    zo2(:) = nn(:,3)/1.0d6
+    zn2(:) = nn(:,2)/1.0d6
+    zno(:) = nn(:,6)/1.0d6
+    zns(:) = nn(:,5)/1.0d6
     znd(:) = 0d0 
     ztn(:) = Tn(:)
   
@@ -113,22 +113,23 @@ contains
   !           O+(2P), O+(2D), O+(4S), N+, N2+, O2+, NO+, N2(A), N(2P),
   !           N(2D), O(1S), O(1D); cm-3
   !ions (ns): 1=O+, 2=NO+, 3=N2+, 4=O2+, 5=N+, 6=H+
+  !neutrals (nn): O,N2,O2,H,N,NO
     zxden(1, :) = 0d0
     zxden(2, :) = 0d0
-    zxden(3, :) = Ns(:,1)/1.0d6
-    zxden(4, :) = Ns(:,5)/1.0d6
-    zxden(5, :) = Ns(:,3)/1.0d6
-    zxden(6, :) = Ns(:,4)/1.0d6
-    zxden(7, :) = Ns(:,2)/1.0d6
+    zxden(3, :) = ns(:,1)/1.0d6
+    zxden(4, :) = ns(:,5)/1.0d6
+    zxden(5, :) = ns(:,3)/1.0d6
+    zxden(6, :) = ns(:,4)/1.0d6
+    zxden(7, :) = ns(:,2)/1.0d6
     zxden(8, :) = 0d0
     zxden(9, :) = 0d0 
     zxden(10,:) = 0d0
     zxden(11,:) = 0d0
     zxden(12,:) = 0d0
-    zti(:) = (Ts(:,1)*Ns(:,1)+Ts(:,2)*Ns(:,2)+Ts(:,3)*Ns(:,3)+Ts(:,4)*Ns(:,4)+Ts(:,5)*Ns(:,5)) &
-            /(Ns(:,1)+Ns(:,2)+Ns(:,3)+Ns(:,4)+Ns(:,5))
+    zti(:) = (Ts(:,1)*ns(:,1)+Ts(:,2)*ns(:,2)+Ts(:,3)*ns(:,3)+Ts(:,4)*ns(:,4)+Ts(:,5)*ns(:,5)) &
+            /(ns(:,1)+ns(:,2)+ns(:,3)+ns(:,4)+ns(:,5))
     zte(:) = Ts(:,7)
-    ze(:)  = Ns(:,7)/1.0d6
+    ze(:)  = ns(:,7)/1.0d6
   !
   ! Call GLOW to calculate ionized and excited species, and airglow emission rates:
   !
@@ -139,11 +140,11 @@ contains
     PN2(:) = sion(3,:)*1.0d6
     PNO(:) = 0d0 !Possibly edit later
     PH(:) = 0d0 !Possibly edit later
-    EHEATING(:) = eheat(:)*1.0d6
+    eheating(:) = eheat(:)*1.0d6
     
-    do j = 1, jmax
-      IDENS(j) = sum((dflx(:,j)-uflx(:,j))*del(:))/6.241509d14
-    enddo
+  !  do j = 1, jmax
+  !    IDENS(j) = sum((dflx(:,j)-uflx(:,j))*del(:))/6.241509d14
+  !  enddo
     
   !  if (first_out) then
   !    first_out = .false.
