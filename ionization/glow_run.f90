@@ -55,7 +55,7 @@ contains
     real(wp), dimension(:), intent(in) :: W0,PhiWmWm2,alt,Tn
     real(wp), dimension(:,:), intent(in) :: nn,ns,Ts,ionrate
     real(wp), dimension(:,:), intent(out) :: ionrate
-    real(wp), dimension(:), intent(out) :: eheat
+    real(wp), dimension(:), intent(out) :: eheat, iver
     real(wp), dimension(nbins) :: phitoptmp = 0.0_wp
     
     integer :: j
@@ -141,6 +141,7 @@ contains
     PNO(:) = 0d0 !Possibly edit later
     PH(:) = 0d0 !Possibly edit later
     eheating(:) = eheat(:)*1.0d6
+    iver = vcb
     
   !  do j = 1, jmax
   !    IDENS(j) = sum((dflx(:,j)-uflx(:,j))*del(:))/6.241509d14
