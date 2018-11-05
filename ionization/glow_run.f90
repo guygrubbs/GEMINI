@@ -135,11 +135,12 @@ contains
   !
     call glow
     
-    PO(:) = sion(1,:)*1.0d6
-    PO2(:) = sion(2,:)*1.0d6
-    PN2(:) = sion(3,:)*1.0d6
-    PNO(:) = 0d0 !Possibly edit later
-    PH(:) = 0d0 !Possibly edit later
+    ionrate(:,1) = sion(1,:)*1.0d6 !O+
+    ionrate(:,4) = sion(2,:)*1.0d6 !O2+
+    ionrate(:,3) = sion(3,:)*1.0d6 !N2+
+    ionrate(:,5) = 0d0 !N+
+    ionrate(:,2) = 0d0 !NO+
+    ionrate(:,6) = 0d0 !H+
     eheating(:) = eheat(:)*1.0d6
     iver = vcb
     
