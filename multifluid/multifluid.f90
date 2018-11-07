@@ -60,8 +60,8 @@ contains
     real(wp), dimension(1:size(vs1,1)-4,1:size(vs1,2)-4,1:size(vs1,3)-3) :: v3i
 
     real(wp), dimension(1:size(ns,1)-4,1:size(ns,2)-4,1:size(ns,3)-4,size(ns,4)) :: Pr,Lo
-    real(wp), dimension(1:size(ns,1)-4,1:size(ns,2)-4,1:size(ns,3)-4,size(ns,4)-1) :: Prprecip,Prpreciptmp
-    real(wp), dimension(1:size(ns,1)-4,1:size(ns,2)-4,1:size(ns,3)-4) :: Qeprecip
+    real(wp), dimension(1:size(ns,1)-4,1:size(ns,2)-4,1:size(ns,3)-4,size(ns,4)-1) :: Prprecip,Prpreciptmp,PrprecipG
+    real(wp), dimension(1:size(ns,1)-4,1:size(ns,2)-4,1:size(ns,3)-4) :: Qeprecip,Qepreciptmp,QeprecipG
     real(wp), dimension(1:size(ns,1)-4,1:size(ns,2)-4,1:size(ns,3)-4) :: chi
     real(wp), dimension(1:size(ns,2)-4,1:size(ns,3)-4,lprec) :: W0,PhiWmWm2
 
@@ -187,44 +187,50 @@ contains
   
     !STIFF/BALANCED ENERGY SOURCES
     call cpu_time(tstart)
-    if(flagglow/=0) then
+    Prprecip=0.0_wp
+    Qeprecip=0.0_wp
+    Prpreciptmp=0.0_wp
+    Qepreciptmp=0.0_wp
 
-      !PARAMETERIZED METHOD, NO AURORA
-      Prprecip=0d0
-      if (gridflag/=0) then
+    if (gridflag/=0) then
+      if(flagglow==0) then !RUN FANG APPROXIMATION
         do iprec=1,lprec    !loop over the different populations of precipitation (2 here?), accumulating production rates
           Prpreciptmp=ionrate_fang08(W0(:,:,iprec),PhiWmWm2(:,:,iprec),x%alt,nn,Tn)    !calculation based on Fang et al [2008]
           Prprecip=Prprecip+Prpreciptmp
         end do
-      else    !do not compute impact ionization on a closed mesh (presumably there is no source of energetic electrons at these lats.)
-        if (myid==0) then
-          write(*,*) 'Looks like we have a closed grid, so skipping impact ionization for time step:  ',t
-        end if
-      end if
-  
-      !now add in photoionization sources
-      chi=sza(ymd,UTsec,x%glat,x%glon)
-      if (myid==0) then
-        write(*,*) 'Computing photoionization for time:  ',t,' using sza range of (root only):  ', &
-                    minval(chi)*180d0/pi,maxval(chi)*180d0/pi
-      end if
-      Prpreciptmp=photoionization(x,nn,Tn,chi,f107,f107a)
-      if (myid==0) then
-        write(*,*) 'Min/max root production rates for time:  ',t,' :  ',minval(pack(Prpreciptmp,.true.)), &
-                    maxval(pack(Prpreciptmp,.true.))
-      end if
-      Prprecip=Prprecip+Prpreciptmp
-      Prprecip=max(Prprecip,1d-5)    !enforce minimum production rate to preserve conditioning for species that rely on constant production, testing should probably be done to see what the best choice is...
-  
-      Qeprecip=eheating(nn,Tn,Prprecip,ns)   !thermal electron heating rate from Swartz and Nisbet, (1978)
-    else
-
-      !GLOW USED, AURORA PRODUCED
-      if (int(t/dtglow)/=int((t+dt)/dtglow).OR.t==0) then
-        Prprecip=ionrate_glow98(W0,PhiWmWm2,ymd,UTsec,x%glat,x%glon,x%alt,nn,Tn,ns,Ts,Qeprecip,iver)
         Prprecip=max(Prprecip,1d-5)
+        Qeprecip=eheating(nn,Tn,Prprecip,ns)
+      else      !GLOW USED, AURORA PRODUCED
+        if (int(t/dtglow)/=int((t+dt)/dtglow).OR.t<0.001_wp) then
+          !PrprecipG=ionrate_glow98(W0,PhiWmWm2,ymd,UTsec,x%glat,x%glon,x%alt,nn,Tn,ns,Ts,QeprecipG,iver)
+          PrprecipG=max(PrprecipG,1d-5)
+        end if
+        Prprecip=PrprecipG
+        Qeprecip=QeprecipG
+      end if
+    else    !do not compute impact ionization on a closed mesh (presumably there is no source of energetic electrons at these lats.)
+      if (myid==0) then
+        write(*,*) 'Looks like we have a closed grid, so skipping impact ionization for time step:  ',t
       end if
     end if
+  
+    !now add in photoionization sources
+    chi=sza(ymd,UTsec,x%glat,x%glon)
+    if (myid==0) then
+      write(*,*) 'Computing photoionization for time:  ',t,' using sza range of (root only):  ', &
+                  minval(chi)*180d0/pi,maxval(chi)*180d0/pi
+    end if
+    Prpreciptmp=photoionization(x,nn,Tn,chi,f107,f107a)
+    if (myid==0) then
+      write(*,*) 'Min/max root production rates for time:  ',t,' :  ',minval(pack(Prpreciptmp,.true.)), &
+                  maxval(pack(Prpreciptmp,.true.))
+    end if
+    Prpreciptmp=max(Prpreciptmp,1d-5)    !enforce minimum production rate to preserve conditioning for species that rely on constant production, testing should probably be done to see what the best choice is...
+    Qepreciptmp=eheating(nn,Tn,Prpreciptmp,ns)   !thermal electron heating rate from Swartz and Nisbet, (1978)
+    !photoion ionrate and heating calculated seperately, added together with
+    !ionrate and heating from Fang or GLOW
+    Prprecip=Prprecip+Prpreciptmp
+    Qeprecip=Qeprecip+Qepreciptmp
   
     call srcsEnergy(nn,vn1,vn2,vn3,Tn,ns,vs1,vs2,vs3,Ts,Pr,Lo)
     do isp=1,lsp
