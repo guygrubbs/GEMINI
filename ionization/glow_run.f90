@@ -16,7 +16,7 @@ logical :: first_call = .true.
 
 contains
 
-  subroutine glow_run(W0,PhiWmWm2,doy,UTsec,xlat,xlon,alt,nn,Tn,ns,Ts,xf107,xf107a,ionrate,eheating,iver)
+  subroutine glow_run(W0,PhiWmWm2,date_doy,UTsec,xlat,xlon,alt,nn,Tn,ns,Ts,xf107,xf107a,ionrate,eheating,iver)
   
   ! This software is part of the GLOW model.  Use is governed by the Open Source
   ! Academic Research License Agreement contained in the file glowlicense.txt.
@@ -57,6 +57,8 @@ contains
     real(wp), dimension(:,:), intent(out) :: ionrate
     real(wp), dimension(:), intent(out) :: eheat, iver
     real(wp), dimension(nbins) :: phitoptmp = 0.0_wp
+    real(wp), intent(in) :: UTsec, xlat, xlon
+    integer, intent(in) :: date_doy
     
     integer :: j
     character(len=1024) :: iri90_dir
@@ -89,7 +91,7 @@ contains
   !
     glat = xlat
     glong = xlon
-    idate = 2017061
+    idate = date_doy
     ut = UTsec
     f107 = xf107
     f107p = xf107
@@ -135,11 +137,11 @@ contains
   !
     call glow
     
-    ionrate(:,1) = sion(1,:)*1.0d6 !O+
-    ionrate(:,4) = sion(2,:)*1.0d6 !O2+
-    ionrate(:,3) = sion(3,:)*1.0d6 !N2+
-    ionrate(:,5) = 0d0 !N+
-    ionrate(:,2) = 0d0 !NO+
+    ionrate(:,1) = (P(1,:)+P(2,:)+P(3,:))*1.0d6 !O+
+    ionrate(:,4) = (P(6,:))*1.0d6 !O2+
+    ionrate(:,3) = (P(5,:))*1.0d6 !N2+
+    ionrate(:,5) = (P(4,:))*1.0d6 !N+
+    ionrate(:,2) = (P(7,:))*1.0d6 !NO+
     ionrate(:,6) = 0d0 !H+
     eheating(:) = eheat(:)*1.0d6
     iver = vcb
