@@ -1,9 +1,9 @@
-module glow
+module glow_mod
 
 use phys_consts, only : wp
 use cglow,only: cglow_init   ! subroutine to allocate use-associated variables
 use cglow,only: jmax,nbins,lmax,nmaj,nei,nex,nw,nc,nst
-use cglow,only: idate,ut,glat,glong,f107a,f107,f107p,ap,ef,ec,ef1,ec1
+use cglow,only: idate,ut,glat,glong,f107a,f107,f107p,ap,ef,ec
 use cglow,only: iscale,jlocal,kchem,xuvfac
 use cglow,only: sza,dip,efrac,ierr
 use cglow,only: zz,zo,zn2,zo2,zns,znd,zno,ztn,ze,zti,zte
@@ -16,7 +16,7 @@ logical :: first_call = .true.
 
 contains
 
-  subroutine glow_run(W0,PhiWmWm2,date_doy,UTsec,xlat,xlon,alt,nn,Tn,ns,Ts,xf107,xf107a,ionrate,eheating,iver)
+  subroutine glow_run(W0,PhiWmWm2,date_doy,UTsec,xlat,xlon,alt,nn,Tn,ns,Ts,ionrate,eheating,iver)
   
   ! This software is part of the GLOW model.  Use is governed by the Open Source
   ! Academic Research License Agreement contained in the file glowlicense.txt.
@@ -53,13 +53,13 @@ contains
     
   
     real(wp), dimension(:), intent(in) :: W0,PhiWmWm2,alt,Tn
-    real(wp), dimension(:,:), intent(in) :: nn,ns,Ts,ionrate
+    real(wp), dimension(:,:), intent(in) :: nn,ns,Ts
     real(wp), dimension(:,:), intent(out) :: ionrate
-    real(wp), dimension(:), intent(out) :: eheat, iver
-    real(wp), dimension(nbins) :: phitoptmp = 0.0_wp
+    real(wp), dimension(:), intent(out) :: eheating, iver
     real(wp), intent(in) :: UTsec, xlat, xlon
     integer, intent(in) :: date_doy
     
+    real(wp), dimension(nbins) :: phitoptmp = 0.0_wp
     integer :: j
     character(len=1024) :: iri90_dir
 
@@ -93,9 +93,9 @@ contains
     glong = xlon
     idate = date_doy
     ut = UTsec
-    f107 = xf107
-    f107p = xf107
-    f107a = xf107a
+    f107 = 150.0 !Made up, shouldn't be used anyway.
+    f107p = 150.0 !Made up, shouldn't be used anyway.
+    f107a = 150.0 !Made up, shouldn't be used anyway.
     ap = 5.
     kchem = 4.
     jlocal = 0.
@@ -137,13 +137,13 @@ contains
   !
     call glow
     
-    ionrate(:,1) = (P(1,:)+P(2,:)+P(3,:))*1.0d6 !O+
-    ionrate(:,4) = (P(6,:))*1.0d6 !O2+
-    ionrate(:,3) = (P(5,:))*1.0d6 !N2+
-    ionrate(:,5) = (P(4,:))*1.0d6 !N+
-    ionrate(:,2) = (P(7,:))*1.0d6 !NO+
+    ionrate(:,1) = SION(1,:)*1.0d6 !O+
+    ionrate(:,4) = SION(2,:)*1.0d6 !O2+
+    ionrate(:,3) = SION(3,:)*1.0d6 !N2+
+    ionrate(:,5) = 0d0*1.0d6 !N+
+    ionrate(:,2) = 0d0*1.0d6 !NO+
     ionrate(:,6) = 0d0 !H+
-    eheating(:) = eheat(:)*1.0d6
+    eheating = eheat*1.0d6
     iver = vcb
     
   !  do j = 1, jmax
@@ -161,4 +161,4 @@ contains
   
   end subroutine glow_run
 
-end module glow
+end module glow_mod

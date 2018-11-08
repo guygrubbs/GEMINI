@@ -46,7 +46,7 @@ contains
 
     integer, intent(in) :: flagglow
     real(wp), intent(in) :: dtglow
-    real(wp), dimension(:,:,:), intent(inout) :: iver
+    real(wp), dimension(:,:,:), intent(out) :: iver
 
     integer :: isp
     real(wp) :: tstart,tfin
@@ -187,6 +187,11 @@ contains
   
     !STIFF/BALANCED ENERGY SOURCES
     call cpu_time(tstart)
+    if(t<0.001_wp.AND.flagglow/=0) then
+      PrprecipG=0.0_wp
+      QeprecipG=0.0_wp
+      iver=0.0_wp
+    end if
     Prprecip=0.0_wp
     Qeprecip=0.0_wp
     Prpreciptmp=0.0_wp
@@ -202,7 +207,7 @@ contains
         Qeprecip=eheating(nn,Tn,Prprecip,ns)
       else      !GLOW USED, AURORA PRODUCED
         if (int(t/dtglow)/=int((t+dt)/dtglow).OR.t<0.001_wp) then
-          !PrprecipG=ionrate_glow98(W0,PhiWmWm2,ymd,UTsec,x%glat,x%glon,x%alt,nn,Tn,ns,Ts,QeprecipG,iver)
+          PrprecipG=ionrate_glow98(W0,PhiWmWm2,ymd,UTsec,x%glat(1,:,:),x%glon(1,:,:),x%alt,nn,Tn,ns,Ts,QeprecipG,iver)
           PrprecipG=max(PrprecipG,1d-5)
         end if
         Prprecip=PrprecipG
@@ -227,8 +232,8 @@ contains
     end if
     Prpreciptmp=max(Prpreciptmp,1d-5)    !enforce minimum production rate to preserve conditioning for species that rely on constant production, testing should probably be done to see what the best choice is...
     Qepreciptmp=eheating(nn,Tn,Prpreciptmp,ns)   !thermal electron heating rate from Swartz and Nisbet, (1978)
-    !photoion ionrate and heating calculated seperately, added together with
-    !ionrate and heating from Fang or GLOW
+
+    !photoion ionrate and heating calculated seperately, added together with ionrate and heating from Fang or GLOW
     Prprecip=Prprecip+Prpreciptmp
     Qeprecip=Qeprecip+Qepreciptmp
   
