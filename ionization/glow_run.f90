@@ -137,10 +137,10 @@ contains
   !
     call glow
     
-    ionrate(:,1) = SION(1,:)*1.0d6 !O+
-    ionrate(:,4) = SION(2,:)*1.0d6 !O2+
-    ionrate(:,3) = SION(3,:)*1.0d6 !N2+
-    ionrate(:,5) = 0d0*1.0d6 !N+
+    ionrate(:,1) = (SION(1,:)+SION(2,:)*0.3d0)*1.0d6 !O+
+    ionrate(:,4) = (SION(2,:)*0.7d0)*1.0d6 !O2+
+    ionrate(:,3) = (SION(3,:)*0.84d0)*1.0d6 !N2+
+    ionrate(:,5) = (SION(3,:)*0.16d0)*1.0d6 !N+
     ionrate(:,2) = 0d0*1.0d6 !NO+
     ionrate(:,6) = 0d0 !H+
     eheating = eheat*1.0d6
