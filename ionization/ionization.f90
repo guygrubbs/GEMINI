@@ -5,6 +5,7 @@ use calculus, only: chapman_a
 use neutral, only : Tnmsis       !we need the unperturbed msis temperatures to apply the simply chapman theory used by this module
 use grid, only : curvmesh,lx1,lx2,lx3,g1,g2,g3
 use temporal, only: doy_calc
+use glow_mod, only: glow_run
 
 implicit none
 
