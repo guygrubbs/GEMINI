@@ -202,7 +202,7 @@ do while (t<tdur)
     call cpu_time(tfin)
 
     if (myid==0) then
-      write(*,*) 'Neutral background calculated in time:  ',tfin-tstart
+      write(*,*) 'Neutral background calculated in time:  ',tfin-tstart,dt
     end if
   end if
 
@@ -219,7 +219,7 @@ do while (t<tdur)
     call neutral_perturb(interptype,dt,dtneu,t,ymd,UTsec,sourcedir,drhon,dzn,sourcemlat,sourcemlon,x,nn,Tn,vn1,vn2,vn3)
     call cpu_time(tfin)
     if (myid==0) then
-      write(*,*) 'Neutral perturbations calculated in time:  ',tfin-tstart
+      write(*,*) 'Neutral perturbations calculated in time:  ',tfin-tstart,dt
     end if
   end if
 
@@ -231,9 +231,8 @@ do while (t<tdur)
                         Phiall,flagE0file,dtE0,E0dir,ymd,UTsec)
   call cpu_time(tfin)
   if (myid==0) then
-    write(*,*) 'Electrodynamics total solve time:  ',tfin-tstart
+    write(*,*) 'Electrodynamics total solve time:  ',tfin-tstart,dt
   end if
-
 
   !UPDATE THE FLUID VARIABLES
   call cpu_time(tstart)
@@ -241,7 +240,7 @@ do while (t<tdur)
                  flagprecfile,dtprec,precdir,flagglow,dtglow)
   call cpu_time(tfin)
   if (myid==0) then
-    write(*,*) 'Multifluid total solve time:  ',tfin-tstart
+    write(*,*) 'Multifluid total solve time:  ',tfin-tstart,dt
   end if
 
 
@@ -252,7 +251,7 @@ do while (t<tdur)
   end if
   call dateinc(dt,ymd,UTsec)
   if (myid==0) then
-    write(*,*) 'Current date',ymd,'Current UT time:  ',UTsec
+    write(*,*) 'Current date',ymd,'Current UT time:  ',UTsec,dt
   end if
 
 
@@ -262,7 +261,7 @@ do while (t<tdur)
     call output_plasma(outdir,flagoutput,ymd,UTsec,vs2,vs3,ns,vs1,Ts,Phiall,J1,J2,J3)
     call cpu_time(tfin)
     if (myid==0) then
-      write(*,*) 'Output done for time step:  ',t,' in cpu_time of:  ',tfin-tstart
+      write(*,*) 'Output done for time step:  ',t,' in cpu_time of:  ',tfin-tstart,dt
     end if
     
     tout=tout+dtout

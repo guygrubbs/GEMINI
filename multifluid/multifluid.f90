@@ -187,7 +187,7 @@ contains
   
     !STIFF/BALANCED ENERGY SOURCES
     call cpu_time(tstart)
-    if(t<0.001_wp.AND.flagglow/=0) then
+    if(t<0.0001_wp.AND.flagglow/=0) then
       PrprecipG=0.0_wp
       QeprecipG=0.0_wp
       iver=0.0_wp
@@ -206,7 +206,7 @@ contains
         Prprecip=max(Prprecip,1d-5)
         Qeprecip=eheating(nn,Tn,Prprecip,ns)
       else      !GLOW USED, AURORA PRODUCED
-        if (int(t/dtglow)/=int((t+dt)/dtglow).OR.t<0.001_wp) then
+        if (int(t/dtglow)/=int((t+dt)/dtglow).OR.t<0.0001_wp) then
           PrprecipG=ionrate_glow98(W0,PhiWmWm2,ymd,UTsec,x%glat(1,:,:),x%glon(1,:,:),x%alt,nn,Tn,ns,Ts,QeprecipG,iver)
           PrprecipG=max(PrprecipG,1d-5)
         end if
@@ -218,6 +218,11 @@ contains
         write(*,*) 'Looks like we have a closed grid, so skipping impact ionization for time step:  ',t
       end if
     end if
+
+	if (myid==0) then
+      write(*,*) 'Min/max root electron impact ionization production rates for time:  ',t,' :  ',minval(pack(Prprecip,.true.)), &
+                  maxval(pack(Prprecip,.true.))
+    end if
   
     !now add in photoionization sources
     chi=sza(ymd,UTsec,x%glat,x%glon)
@@ -227,7 +232,7 @@ contains
     end if
     Prpreciptmp=photoionization(x,nn,Tn,chi,f107,f107a)
     if (myid==0) then
-      write(*,*) 'Min/max root production rates for time:  ',t,' :  ',minval(pack(Prpreciptmp,.true.)), &
+      write(*,*) 'Min/max root photoionization production rates for time:  ',t,' :  ',minval(pack(Prpreciptmp,.true.)), &
                   maxval(pack(Prpreciptmp,.true.))
     end if
     Prpreciptmp=max(Prpreciptmp,1d-5)    !enforce minimum production rate to preserve conditioning for species that rely on constant production, testing should probably be done to see what the best choice is...
