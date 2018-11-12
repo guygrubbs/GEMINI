@@ -2,7 +2,8 @@
 CMakeFiles/
 CMakeCache.txt
 test_*
-
+*.exe
+*.dat
 gemini
 initialize/
 simulations/
