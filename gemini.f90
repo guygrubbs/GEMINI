@@ -143,7 +143,7 @@ if (myid==0) then
 end if
 
 !ALLOCATE MEMORY FOR AURORAL EMISSIONS, IF CALCULATED
-if(flagglow==1) then
+if(flagglow/=0) then
   allocate(iver(lx2,lx3,lwave))
 end if
 
@@ -202,7 +202,7 @@ do while (t<tdur)
     call cpu_time(tfin)
 
     if (myid==0) then
-      write(*,*) 'Neutral background calculated in time:  ',tfin-tstart,dt
+      write(*,*) 'Neutral background calculated in time:  ',tfin-tstart
     end if
   end if
 
@@ -219,7 +219,7 @@ do while (t<tdur)
     call neutral_perturb(interptype,dt,dtneu,t,ymd,UTsec,sourcedir,drhon,dzn,sourcemlat,sourcemlon,x,nn,Tn,vn1,vn2,vn3)
     call cpu_time(tfin)
     if (myid==0) then
-      write(*,*) 'Neutral perturbations calculated in time:  ',tfin-tstart,dt
+      write(*,*) 'Neutral perturbations calculated in time:  ',tfin-tstart
     end if
   end if
 
@@ -231,7 +231,7 @@ do while (t<tdur)
                         Phiall,flagE0file,dtE0,E0dir,ymd,UTsec)
   call cpu_time(tfin)
   if (myid==0) then
-    write(*,*) 'Electrodynamics total solve time:  ',tfin-tstart,dt
+    write(*,*) 'Electrodynamics total solve time:  ',tfin-tstart
   end if
 
   !UPDATE THE FLUID VARIABLES
@@ -240,7 +240,7 @@ do while (t<tdur)
                  flagprecfile,dtprec,precdir,flagglow,dtglow)
   call cpu_time(tfin)
   if (myid==0) then
-    write(*,*) 'Multifluid total solve time:  ',tfin-tstart,dt
+    write(*,*) 'Multifluid total solve time:  ',tfin-tstart
   end if
 
 
@@ -251,7 +251,7 @@ do while (t<tdur)
   end if
   call dateinc(dt,ymd,UTsec)
   if (myid==0) then
-    write(*,*) 'Current date',ymd,'Current UT time:  ',UTsec,dt
+    write(*,*) 'Current date',ymd,'Current UT time:  ',UTsec
   end if
 
 
@@ -261,11 +261,12 @@ do while (t<tdur)
     call output_plasma(outdir,flagoutput,ymd,UTsec,vs2,vs3,ns,vs1,Ts,Phiall,J1,J2,J3)
     call cpu_time(tfin)
     if (myid==0) then
-      write(*,*) 'Output done for time step:  ',t,' in cpu_time of:  ',tfin-tstart,dt
+      write(*,*) 'Output done for time step:  ',t,' in cpu_time of:  ',tfin-tstart
     end if
     
     tout=tout+dtout
   end if
+  !stop 'first step done'
 end do
 
 
@@ -278,7 +279,7 @@ if (myid==0) then
   deallocate(Phiall)
 end if
 
-if (flagglow==1) then
+if (flagglow/=0) then
   deallocate(iver)
 end if
 

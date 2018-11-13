@@ -13,7 +13,8 @@ use temporal, only : sza
 implicit none
 
 integer, parameter :: lprec=2    !number of precipitating electron populations
-
+real(wp), allocatable, dimension(:,:,:,:) :: PrPrecipG
+real(wp), allocatable, dimension(:,:,:) :: QePrecipG, iverG
 
 contains
 
@@ -60,8 +61,8 @@ contains
     real(wp), dimension(1:size(vs1,1)-4,1:size(vs1,2)-4,1:size(vs1,3)-3) :: v3i
 
     real(wp), dimension(1:size(ns,1)-4,1:size(ns,2)-4,1:size(ns,3)-4,size(ns,4)) :: Pr,Lo
-    real(wp), dimension(1:size(ns,1)-4,1:size(ns,2)-4,1:size(ns,3)-4,size(ns,4)-1) :: Prprecip,Prpreciptmp,PrprecipG
-    real(wp), dimension(1:size(ns,1)-4,1:size(ns,2)-4,1:size(ns,3)-4) :: Qeprecip,Qepreciptmp,QeprecipG
+    real(wp), dimension(1:size(ns,1)-4,1:size(ns,2)-4,1:size(ns,3)-4,size(ns,4)-1) :: Prprecip,Prpreciptmp
+    real(wp), dimension(1:size(ns,1)-4,1:size(ns,2)-4,1:size(ns,3)-4) :: Qeprecip,Qepreciptmp
     real(wp), dimension(1:size(ns,1)-4,1:size(ns,2)-4,1:size(ns,3)-4) :: chi
     real(wp), dimension(1:size(ns,2)-4,1:size(ns,3)-4,lprec) :: W0,PhiWmWm2
 
@@ -71,6 +72,19 @@ contains
     real(wp), dimension(1:size(ns,1)-4,1:size(ns,2)-4,1:size(ns,3)-4,size(ns,4)) :: Q
     real(wp), parameter :: xicon=3d0    !decent value for closed field-line grids extending to high altitudes.  
 
+    !MAKING SURE THESE ARRAYS ARE ALWAYS IN SCOPE
+    if ((flagglow/=0).and.(.NOT.allocated(PrprecipG))) then
+      allocate(PrprecipG(1:size(ns,1)-4,1:size(ns,2)-4,1:size(ns,3)-4,size(ns,4)-1))
+      PrprecipG(:,:,:,:)=0.0_wp
+    end if
+    if ((flagglow/=0).and.(.NOT.allocated(QeprecipG))) then
+      allocate(QeprecipG(1:size(ns,1)-4,1:size(ns,2)-4,1:size(ns,3)-4))
+      QeprecipG(:,:,:)=0.0_wp
+    end if
+    if ((flagglow/=0).and.(.NOT.allocated(iverG))) then
+      allocate(iverG(size(iver,1),size(iver,2),size(iver,3)))
+      iverG(:,:,:)=0.0_wp
+    end if
 
     !CALCULATE THE INTERNAL ENERGY AND MOMENTUM FLUX DENSITIES (ADVECTION AND SOURCE SOLUTIONS ARE DONE IN THESE VARIABLES)
     do isp=1,lsp
@@ -187,11 +201,6 @@ contains
   
     !STIFF/BALANCED ENERGY SOURCES
     call cpu_time(tstart)
-    if(t<0.0001_wp.AND.flagglow/=0) then
-      PrprecipG=0.0_wp
-      QeprecipG=0.0_wp
-      iver=0.0_wp
-    end if
     Prprecip=0.0_wp
     Qeprecip=0.0_wp
     Prpreciptmp=0.0_wp
@@ -206,12 +215,13 @@ contains
         Prprecip=max(Prprecip,1d-5)
         Qeprecip=eheating(nn,Tn,Prprecip,ns)
       else      !GLOW USED, AURORA PRODUCED
-        if (int(t/dtglow)/=int((t+dt)/dtglow).OR.t<0.0001_wp) then
-          PrprecipG=ionrate_glow98(W0,PhiWmWm2,ymd,UTsec,x%glat(1,:,:),x%glon(1,:,:),x%alt,nn,Tn,ns,Ts,QeprecipG,iver)
+        if (int(t/dtglow)/=int((t+dt)/dtglow).OR.t<0.1_wp) then
+          PrprecipG=ionrate_glow98(W0,PhiWmWm2,ymd,UTsec,f107,f107a,x%glat(1,:,:),x%glon(1,:,:),x%alt,nn,Tn,ns,Ts,QeprecipG,iverG)
           PrprecipG=max(PrprecipG,1d-5)
         end if
         Prprecip=PrprecipG
         Qeprecip=QeprecipG
+        iver=iverG
       end if
     else    !do not compute impact ionization on a closed mesh (presumably there is no source of energetic electrons at these lats.)
       if (myid==0) then
@@ -219,7 +229,7 @@ contains
       end if
     end if
 
-	if (myid==0) then
+    if (myid==0) then
       write(*,*) 'Min/max root electron impact ionization production rates for time:  ',t,' :  ',minval(pack(Prprecip,.true.)), &
                   maxval(pack(Prprecip,.true.))
     end if

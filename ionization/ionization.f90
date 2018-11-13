@@ -346,7 +346,7 @@ contains
 
   end function eheating
 
-  function ionrate_glow98(W0,PhiWmWm2,ymd,UTsec,glat,glon,alt,nn,Tn,ns,Ts,eheating,iver)
+  function ionrate_glow98(W0,PhiWmWm2,ymd,UTsec,f107,f107a,glat,glon,alt,nn,Tn,ns,Ts,eheating,iver)
     
     !------------------------------------------------------------
     !-------COMPUTE IONIZATION RATES USING GLOW MODEL RUN AT EACH
@@ -356,7 +356,7 @@ contains
     real(wp), dimension(:,:,:), intent(in) :: W0,PhiWmWm2
 
     integer, dimension(3), intent(in) :: ymd
-    real(wp), intent(in) :: UTsec
+    real(wp), intent(in) :: UTsec, f107, f107a
     real(wp), dimension(:,:), intent(in) :: glat,glon
 
     real(wp), dimension(:,:,:,:), intent(in) :: nn
@@ -368,8 +368,6 @@ contains
 
     real(wp), dimension(1:size(nn,1),1:size(nn,2),1:size(nn,3),lsp-1) :: ionrate_glow98
  
- 
-    real(wp), dimension(1:size(PhiWmWm2,1),1:size(PhiWmWm2,2),1:size(PhiWmWm2,3)) :: PhiW
     integer :: ix2,ix3,lx1,lx2,lx3,date_doy
 
     lx1=size(nn,1)
@@ -378,25 +376,23 @@ contains
 
     !zero flux should really be check per field line
     if ( maxval(pack(PhiWmWm2,.true.)) > 0.0_wp) then   !only compute rates if nonzero flux given
-      !CONVERSION TO DIFFERENTIAL NUMBER FLUX
-      PhiW=PhiWmWm2*1d-3/elchrg    !Q from mW/m^2 to eV/m^2/s
-      PhiW=PhiW/1d4/6.242d11    !Q to erg/cm^2/s, 1 erg = 6.242d11 eV
       date_doy = ymd(1)*1000+doy_calc(ymd)
 
       do ix3=1,lx3
         do ix2=1,lx2
           !W0eV=W0(ix2,ix3) !Eo in eV at upper x,y locations (z,x,y) normally
          
-          if ( maxval(pack(PhiW(ix2,ix3,:),.true.)) <= 1d-6) then
+          if ( maxval(pack(PhiWmWm2(ix2,ix3,:),.true.)) <= 0.0_wp) then
             ionrate_glow98(:,ix2,ix3,:)=0.0_wp
             eheating(:,ix2,ix3)=0.0_wp
             iver(ix2,ix3,:)=0.0_wp
           else
             !Run GLOW here with the input parameters to obtain production rates
             !GLOW outputs ion production rates in 1/cm^3/s
-            call glow_run(W0(ix2,ix3,:),PhiW(ix2,ix3,:),date_doy,UTsec,glat(ix2,ix3),glon(ix2,ix3), &
-            alt(:,ix2,ix3),nn(:,ix2,ix3,:),Tn(:,ix2,ix3),ns(1:lx1,ix2,ix3,:),Ts(1:lx1,ix2,ix3,:), &
-            ionrate_glow98(:,ix2,ix3,:),eheating(:,ix2,ix3),iver(ix2,ix3,:))
+            call glow_run(W0(ix2,ix3,:),PhiWmWm2(ix2,ix3,:),date_doy,UTsec,f107,f107a,glat(ix2,ix3), &
+            glon(ix2,ix3),alt(:,ix2,ix3),nn(:,ix2,ix3,:),Tn(:,ix2,ix3),ns(1:lx1,ix2,ix3,:), &
+            Ts(1:lx1,ix2,ix3,:),ionrate_glow98(:,ix2,ix3,:),eheating(:,ix2,ix3),iver(ix2,ix3,:))
+            !write(*,*) 'glow called, max precip: ', maxval(pack(ionrate_glow98(:,ix2,ix3,:),.true.))
           end if
         end do !Y coordinate loop
       end do !X coordinate loop
