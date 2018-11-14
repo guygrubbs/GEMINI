@@ -216,6 +216,7 @@ contains
         Qeprecip=eheating(nn,Tn,Prprecip,ns)
       else      !GLOW USED, AURORA PRODUCED
         if (int(t/dtglow)/=int((t+dt)/dtglow).OR.t<0.1_wp) then
+          PrprecipG=0.0_wp; QeprecipG=0.0_wp; iverG=0.0_wp;
           PrprecipG=ionrate_glow98(W0,PhiWmWm2,ymd,UTsec,f107,f107a,x%glat(1,:,:),x%glon(1,:,:),x%alt,nn,Tn,ns,Ts,QeprecipG,iverG)
           PrprecipG=max(PrprecipG,1d-5)
         end if
@@ -230,8 +231,13 @@ contains
     end if
 
     if (myid==0) then
-      write(*,*) 'Min/max root electron impact ionization production rates for time:  ',t,' :  ',minval(pack(Prprecip,.true.)), &
-                  maxval(pack(Prprecip,.true.))
+      write(*,*) 'Min/max root electron impact ionization production rates for time:  ',t,' :  ', & 
+        minval(pack(Prprecip,.true.)), maxval(pack(Prprecip,.true.))
+    end if
+
+    if (myid==0) then
+      write(*,*) 'Min/max 427.8 nm emission column-integrated intensity for time:  ',t,' :  ', &
+        minval(pack(iver(:,:,2),.true.)), maxval(pack(iver(:,:,2),.true.))
     end if
   
     !now add in photoionization sources
