@@ -82,6 +82,7 @@ contains
   !
   ! Hard coded solution, future = pass ec and ef array to maxt assuming > 2
   ! populations
+    phitop=0.0_wp
     do j = 1, size(PhiWmWm2,1)
       !write(*,*) 'Eo and Q values: ',W0(j),PhiWmWm2(j)
       call maxt(real(PhiWmWm2(j),4),real(W0(j),4),ener,del,nbins,0,0,0,phitoptmp)
