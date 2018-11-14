@@ -83,6 +83,7 @@ character(:), allocatable :: E0dir   ! directory containing electric field file 
 integer :: flagglow                     !flag toggling GLOW module run (include aurora) (0 - no; 1 - yes)
 real(wp) :: dtglow                      !time interval between GLOW runs (s)
 real(wp) :: dtglowout                   !time interval between GLOW auroral outputs (s)
+real(wp) :: tglowout                    !time for next GLOW output
 
 !FOR HANDLING OUTPUT
 integer :: argc
@@ -121,6 +122,7 @@ outdir = trim(argv)
 
 if (myid==0) then
   call create_outdir(outdir,infile,indatsize,indatgrid,flagdneu,sourcedir,flagprecfile,precdir,flagE0file,E0dir)
+  if (flagglow/=0) create_outdir_aur(outdir)
 end if
 
 
@@ -176,11 +178,11 @@ if(flagglow==1) then
 end if
 
 !MAIN LOOP
-UTsec=UTsec0; it=1; t=0d0; tout=t;
+UTsec=UTsec0; it=1; t=0d0; tout=t; tglowout=t;
 do while (t<tdur)
   !TIME STEP CALCULATION
   dtprev=dt
-  call dt_comm(t,tout,tcfl,ns,Ts,vs1,vs2,vs3,B1,B2,B3,x,potsolve,dt)
+  call dt_comm(t,tout,tglowout,flagglow,tcfl,ns,Ts,vs1,vs2,vs3,B1,B2,B3,x,potsolve,dt)
   if (it>1) then
     if(dt/dtprev > 10d0) then     !throttle how quickly we allow dt to increase
       dt=10d0*dtprev
@@ -261,12 +263,22 @@ do while (t<tdur)
     call output_plasma(outdir,flagoutput,ymd,UTsec,vs2,vs3,ns,vs1,Ts,Phiall,J1,J2,J3)
     call cpu_time(tfin)
     if (myid==0) then
-      write(*,*) 'Output done for time step:  ',t,' in cpu_time of:  ',tfin-tstart
+      write(*,*) 'Plasma output done for time step:  ',t,' in cpu_time of:  ',tfin-tstart
     end if
     
     tout=tout+dtout
   end if
-  !stop 'first step done'
+
+  !GLOW OUTPUT
+  if ((flagglow/=0).and.(abs(t-tglowout) < 1d-5)) then !same as plasma output
+    call cpu_time(tstart)
+    call output_aur(outdir,flagglow,ymd,UTsec,iver)
+    call cpu_time(tfin)
+    if (myid==0) then
+      write(*,*) 'Auroral output done for time step:  ',t,' in cpu_time of: ',tfin-tstart
+    end if
+    tglowout=tglowout+dtglowout
+  end if
 end do
 
 

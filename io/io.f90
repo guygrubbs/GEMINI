@@ -239,6 +239,20 @@ contains
   end subroutine create_outdir_mag
 
 
+  subroutine create_outdir_aur(outdir)
+
+    !------------------------------------------------------------
+    !-------CREATES OUTPUT DIRECTORY FOR MAGNETIC FIELD CALCULATIONS
+    !------------------------------------------------------------
+
+    character(*), intent(in) :: outdir
+
+    !NOTE HERE THAT WE INTERPRET OUTDIR AS THE BASE DIRECTORY CONTAINING SIMULATION OUTPUT
+    call execute_command_line('mkdir -pv '//outdir//'/aurmaps/')
+
+  end subroutine create_outdir_aur
+
+
   subroutine input_plasma(x1,x2,x3all,indatsize,ns,vs1,Ts)
 
     !------------------------------------------------------------
