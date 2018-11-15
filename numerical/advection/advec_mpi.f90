@@ -60,7 +60,7 @@ contains
     else
       v1i(1,:,:)=vs1(1,1:lx2,1:lx3,isp)
 !!    v1i(lx1+1,:,:)=v1i(lx1,:,:)    !avoids issues with top boundary velocity spikes which may arise
-      v1i(lx1+1,:,:)=max(v1i(lx1,1:lx2,1:lx3),0.0)    !interesting that this is not vs1...
+      v1i(lx1+1,:,:)=max(v1i(lx1,1:lx2,1:lx3),0d0)    !interesting that this is not vs1...
     end if  
 
     v2i(:,1,:)=vs2(1:lx1,1,1:lx3,isp)

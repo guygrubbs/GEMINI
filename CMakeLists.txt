@@ -11,9 +11,9 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules/)
 
 set(LIB_DIR ${PROJECT_SOURCE_DIR}/../fortran-libs) # for self-compiled libraries
 
-include(${PROJECT_SOURCE_DIR}/cmake/compilers.cmake)
+include(cmake/compilers.cmake)
 
-include(${PROJECT_SOURCE_DIR}/cmake/libraries.cmake)
+include(cmake/libraries.cmake)
 
 # --- Build Gemini
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/numerical)
@@ -34,8 +34,8 @@ add_library(neutral neutral/neutral.f90)
 target_link_libraries(neutral PUBLIC interp io msis temporal ${MPI_Fortran_LIBRARIES})
 target_include_directories(neutral PUBLIC ${MPI_Fortran_INCLUDE_DIRS}) #PUBLIC for ionization with ifort
 
-add_library(ionization ionization/ionization.f90)
-target_link_libraries(ionization PRIVATE neutral)
+include(cmake/glow.cmake)
+
 
 add_library(collision collisions/collisions.f90)
 target_link_libraries(collision PRIVATE const)
@@ -55,7 +55,7 @@ add_library(potential_comm_mumps numerical/potential/potential_comm_mumps.f90)
 target_link_libraries(potential_comm_mumps PRIVATE potential_mumps potentialBCs collision calculus grid const)
 
 add_library(potentialBCs numerical/potential/boundary_conditions/potentialBCs_mumps.f90)
-target_link_libraries(potentialBCs PRIVATE grid calculus io const ${MUMPS_LIBRARIES} ${SCALAPACK_LIBRARIES} ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
+target_link_libraries(potentialBCs PRIVATE grid calculus interp io temporal const ${MUMPS_LIBRARIES} ${SCALAPACK_LIBRARIES} ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
 target_include_directories(potentialBCs PRIVATE ${MUMPS_INCLUDE_DIRS})
 
 # --- other libs

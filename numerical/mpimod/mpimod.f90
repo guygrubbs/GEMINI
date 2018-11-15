@@ -58,6 +58,9 @@ integer, parameter :: tagE01=76,tagE02=77,tagE03=78,tagVminx1=79,tagVmaxx1=80
 integer, parameter :: tagBr=81,tagBtheta=82, tagBphi=83
 integer, parameter :: tagdV=84,tagJx=85,tagJy=86,tagRx=87,tagRy=88,tagRz=89,tagRcubed=90,tagJz=91
 
+!AURORAL TAG(S)
+integer, parameter :: tagAur=95
+
 !VARIABLES REUSED BY ALL WORKERS AND USING MODULES
 integer, protected :: myid,lid    !no external procedure should mess with these (but they need to be able to read them)
 integer :: ierr                   !using procedures need to be able to overwrite this to prevent seg. faults (or something)
