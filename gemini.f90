@@ -8,7 +8,7 @@ use phys_consts, only : lnchem, lwave
 use grid
 use temporal, only : dt_comm,dateinc
 use neutral, only : neutral_atmos,make_dneu,neutral_perturb,clear_dneu
-use io, only : read_configfile,input_plasma,create_outdir,output_plasma
+use io, only : read_configfile,input_plasma,create_outdir,output_plasma,create_outdir_aur,output_aur
 use potential_comm,only : electrodynamics
 use multifluid, only : fluid_adv
 use mpimod
@@ -122,7 +122,7 @@ outdir = trim(argv)
 
 if (myid==0) then
   call create_outdir(outdir,infile,indatsize,indatgrid,flagdneu,sourcedir,flagprecfile,precdir,flagE0file,E0dir)
-  if (flagglow/=0) create_outdir_aur(outdir)
+  if (flagglow/=0) call create_outdir_aur(outdir)
 end if
 
 
@@ -145,7 +145,7 @@ if (myid==0) then
 end if
 
 !ALLOCATE MEMORY FOR AURORAL EMISSIONS, IF CALCULATED
-if(flagglow/=0) then
+if (flagglow/=0) then
   allocate(iver(lx2,lx3,lwave))
 end if
 
@@ -173,7 +173,7 @@ E1=0d0; E2=0d0; E3=0d0;
 vs2=0d0; vs3=0d0;
 
 !INITIALIZE AURORAL EMISSION MAP
-if(flagglow==1) then
+if(flagglow/=0) then
   iver=0.0_wp
 end if
 

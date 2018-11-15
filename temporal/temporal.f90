@@ -50,7 +50,7 @@ contains
   
       !CHECK WHETHER WE'D OVERSTEP OUR TARGET OUTPUT TIME
       !GLOW OUTPUT HAS PRIORITY SINCE IT WILL OUTPUT MORE OFTEN
-      if ((flagglow/=0).and.(t+dt>tglowout) then
+      if ((flagglow/=0).and.(t+dt>tglowout)) then
         dt=tglowout-t
       end if
 
