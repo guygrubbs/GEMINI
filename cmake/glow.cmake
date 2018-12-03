@@ -17,7 +17,7 @@ function(add_glow)
       ionization/glow/geomag.f90
       ionization/glow/egrid.f90 ionization/glow/maxt.f90)
   if(${CMAKE_Fortran_COMPILER_ID} STREQUAL GNU)
-    target_compile_options(cglow PRIVATE -w -fno-implicit-none)
+    target_compile_options(cglow PRIVATE -fno-implicit-none)
   endif()
 
   add_library(glow ionization/glow_run.f90)

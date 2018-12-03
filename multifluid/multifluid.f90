@@ -235,7 +235,7 @@ contains
         minval(pack(Prprecip,.true.)), maxval(pack(Prprecip,.true.))
     end if
 
-    if ((flagglow/=0).and.(myid==0)) then
+    if ((flagglow/=0).and.(myid==lid/2)) then
       write(*,*) 'Min/max 427.8 nm emission column-integrated intensity for time:  ',t,' :  ', &
         minval(pack(iver(:,:,2),.true.)), maxval(pack(iver(:,:,2),.true.))
     end if

@@ -115,13 +115,13 @@ contains
   !
     call mzgrid (jmax,nex,idate,ut,glat,glong,stl,f107a,f107,f107p,ap,iri90_dir, &
                  z,zo,zo2,zn2,zns,znd,zno,ztn,zun,zvn,ze,zti,zte,zxden)
-    write(*,*) jmax,nex,idate,ut,glat,glong,stl,f107a,f107,f107p,ap,iri90_dir
+  !  write(*,*) jmax,nex,idate,ut,glat,glong,stl,f107a,f107,f107p,ap,iri90_dir
   !
   ! Set Maxwellian distribution into phitop array
   !
     phitop=0.0; phitoptmp=0.0
     do j = 1, size(PhiWmWm2,1)
-      write(*,*) real(PhiWmWm2(j),4), real(W0(j),4)
+  !    write(*,*) real(PhiWmWm2(j),4), real(W0(j),4)
       call maxt(real(PhiWmWm2(j),4),real(W0(j),4),ener,del,nbins,0,0,0,phitoptmp)
       phitop=phitop+phitoptmp
     end do
