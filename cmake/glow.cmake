@@ -11,7 +11,10 @@ function(add_glow)
       ionization/glow/rcolum.f90 ionization/glow/qback.f90
       ionization/glow/etrans.f90 ionization/glow/exsect.f
       ionization/glow/gchem.f90 ionization/glow/bands.f90 #ionization/glow/qproton.f90
-      ionization/glow/ephoto.f90
+      ionization/glow/ephoto.f90 ionization/glow/mzgrid.f90
+      ionization/glow/iri90.f ionization/glow/nrlmsise00.f
+      ionization/glow/snoem.f90 ionization/glow/snoemint.f90
+      ionization/glow/geomag.f90
       ionization/glow/egrid.f90 ionization/glow/maxt.f90)
   if(${CMAKE_Fortran_COMPILER_ID} STREQUAL GNU)
     target_compile_options(cglow PRIVATE -w -fno-implicit-none)

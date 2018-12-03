@@ -58,37 +58,41 @@ contains
     real(wp), dimension(:), intent(out) :: eheating, iver
     real(wp), intent(in) :: UTsec, xlat, xlon, xf107, xf107a
     integer, intent(in) :: date_doy
-    
-    real, dimension(nbins) :: phitoptmp = 0.0d0
+
+    real :: stl   
+    real,allocatable :: z(:),zun(:),zvn(:)             ! glow height coordinate in km (jmax)
+
+    real, dimension(nbins) :: phitoptmp = 0.0
     integer :: j
     character(len=1024) :: iri90_dir
 
+  !
+  ! Variables that need to be set for GLOW not sent from GEMINI
+  !
+    kchem = 4.
+    jlocal = 0.
+    iscale=1
+    xuvfac=3.
+  !
+  ! Set data directories:
+  !
     data_dir    ='ionization/glow/data/'
     iri90_dir   ='ionization/glow/data/iri90/'
-  ! Execute:
+  !
   ! Allocate arrays in other modules (formerly in common blocks):
   !
     if(first_call) then
       first_call = .false.
-      jmax=size(alt,1)
+      jmax=102
       call cglow_init
     end if
+    allocate(z(jmax))
+    allocate(zun(jmax))
+    allocate(zvn(jmax))
   !
   ! Set electron energy grid:
   !
     call egrid (ener, del, nbins)
-  !
-  ! Set Maxwellian distribution into phitop array
-  !
-  ! Hard coded solution, future = pass ec and ef array to maxt assuming > 2
-  ! populations
-    phitop=0.0_wp
-    do j = 1, size(PhiWmWm2,1)
-      !write(*,*) 'Eo and Q values: ',W0(j),PhiWmWm2(j)
-      call maxt(real(PhiWmWm2(j),4),real(W0(j),4),ener,del,nbins,0,0,0,phitoptmp)
-      phitop=phitop+phitoptmp
-    end do
-    !write(*,*) 'Max flux in phitop: ',maxval(pack(phitop,.true.))
   !
   ! Set variables given from GEMINI
   !
@@ -99,68 +103,51 @@ contains
     f107 = real(xf107,4)
     f107p = real(xf107,4)
     f107a = real(xf107a,4)
-    ap = 5.
-    kchem = 4.
-    jlocal = 0.
+    ap = 31.5
   !
-  ! Convert densities and altitudes into 
+  ! Calculate local solar time:
   !
-    zz(:)  = real(alt(:)*1.0d2,4)
-    zo(:)  = real(nn(:,1)/1.0d6,4)
-    zo2(:) = real(nn(:,3)/1.0d6,4)
-    zn2(:) = real(nn(:,2)/1.0d6,4)
-    zno(:) = real(nn(:,6)/1.0d6,4)
-    zns(:) = real(nn(:,5)/1.0d6,4)
-    znd(:) = real(0d0,4)
-    ztn(:) = real(Tn(:),4)
-  
-  ! ZXDEN   array of excited and and/or ionized state densities at each altitude:
-  !           O+(2P), O+(2D), O+(4S), N+, N2+, O2+, NO+, N2(A), N(2P),
-  !           N(2D), O(1S), O(1D); cm-3
-  !ions (ns): 1=O+, 2=NO+, 3=N2+, 4=O2+, 5=N+, 6=H+
-  !neutrals (nn): O,N2,O2,H,N,NO
-    zxden(1, :) = 0d0
-    zxden(2, :) = 0d0
-    zxden(3, :) = real(ns(:,1)/1.0d6,4)
-    zxden(4, :) = real(ns(:,5)/1.0d6,4)
-    zxden(5, :) = real(ns(:,3)/1.0d6,4)
-    zxden(6, :) = real(ns(:,4)/1.0d6,4)
-    zxden(7, :) = real(ns(:,2)/1.0d6,4)
-    zxden(8, :) = 0d0
-    zxden(9, :) = 0d0 
-    zxden(10,:) = 0d0
-    zxden(11,:) = 0d0
-    zxden(12,:) = 0d0
-    zti(:) = real((Ts(:,1)*ns(:,1)+Ts(:,2)*ns(:,2)+Ts(:,3)*ns(:,3)+Ts(:,4)*ns(:,4)+Ts(:,5)*ns(:,5)) &
-            /(ns(:,1)+ns(:,2)+ns(:,3)+ns(:,4)+ns(:,5)),4)
-    zte(:) = real(Ts(:,7),4)
-    ze(:)  = real(ns(:,7)/1.0d6,4)
+    stl = ut/3600. + glong/15.
+    if (stl < 0.) stl = stl + 24.
+    if (stl >= 24.) stl = stl - 24.
+  !
+  ! Call MZGRID to use MSIS/NOEM/IRI inputs on default altitude grid:
+  !
+    call mzgrid (jmax,nex,idate,ut,glat,glong,stl,f107a,f107,f107p,ap,iri90_dir, &
+                 z,zo,zo2,zn2,zns,znd,zno,ztn,zun,zvn,ze,zti,zte,zxden)
+    write(*,*) jmax,nex,idate,ut,glat,glong,stl,f107a,f107,f107p,ap,iri90_dir
+  !
+  ! Set Maxwellian distribution into phitop array
+  !
+    phitop=0.0; phitoptmp=0.0
+    do j = 1, size(PhiWmWm2,1)
+      write(*,*) real(PhiWmWm2(j),4), real(W0(j),4)
+      call maxt(real(PhiWmWm2(j),4),real(W0(j),4),ener,del,nbins,0,0,0,phitoptmp)
+      phitop=phitop+phitoptmp
+    end do
+  !
+  ! Fill altitude array, converting from km to cm 
+  !
+    zz(:)  = z(:)*1.e5
   !
   ! Call GLOW to calculate ionized and excited species, and airglow emission rates:
   !
     call glow
     
-    ionrate(:,1) = (real(SION(1,:),wp)+real(SION(2,:),wp)*0.3d0)*1.0d6 !O+
-    ionrate(:,4) = (real(SION(2,:),wp)*0.7d0)*1.0d6 !O2+
-    ionrate(:,3) = (real(SION(3,:),wp)*0.84d0)*1.0d6 !N2+
-    ionrate(:,5) = (real(SION(3,:),wp)*0.16d0)*1.0d6 !N+
-    ionrate(:,2) = real(0d0,wp)*1.0d6 !NO+
-    ionrate(:,6) = real(0d0,wp)*1.0d6 !H+
-    eheating = real(eheat,wp)*1.0d6
+    ionrate(:,1) = real(0.0,wp) !(real(SION(1,:),wp)+real(SION(2,:),wp)*0.3d0)*1.0d6 !O+
+    ionrate(:,4) = real(0.0,wp) !(real(SION(2,:),wp)*0.7d0)*1.0d6 !O2+
+    ionrate(:,3) = real(0.0,wp) !(real(SION(3,:),wp)*0.84d0)*1.0d6 !N2+
+    ionrate(:,5) = real(0.0,wp) !(real(SION(3,:),wp)*0.16d0)*1.0d6 !N+
+    ionrate(:,2) = real(0.0,wp) !real(0d0,wp)*1.0d6 !NO+
+    ionrate(:,6) = real(0.0,wp) !real(0d0,wp)*1.0d6 !H+
+    eheating = real(0.0,wp) !real(eheat,wp)*1.0d6
     iver = real(vcb,wp)
-    
-  !  do j = 1, jmax
-  !    IDENS(j) = sum((dflx(:,j)-uflx(:,j))*del(:))/6.241509d14
-  !  enddo
-    
-  !  if (first_out) then
-  !    first_out = .false.
-  !    write(6,"(1x,i7,11f10.3)") idate,ut,glat,glong,f107a,f107,f107p,ap,ef,ec,ef1,ec1
-  !    write(6,"('   Z     Tn   Ti   Te      O        N2        NO      Ne(in)    Ne(out)   Ionrate     &
-  !          O+        O2+       NO+       N2+     EHeat    Jz')")
-  !    write(6,"(1x,0p,f5.1,3f6.0,1p,12e10.2)") (alt(j)/1.0d3,ztn(j),zti(j),zte(j),zo(j),zn2(j),zno(j),ze(j), &
-  !      ecalc(j),tir(j),PO(j),PO2(j),PNO(j),PN2(j),EHEATING(j),IDENS(j),j=1,jmax)
-  !  end if
+
+  ! ZXDEN   array of excited and and/or ionized state densities at each altitude:
+  !           O+(2P), O+(2D), O+(4S), N+, N2+, O2+, NO+, N2(A), N(2P),
+  !           N(2D), O(1S), O(1D); cm-3
+  !ions (ns): 1=O+, 2=NO+, 3=N2+, 4=O2+, 5=N+, 6=H+
+  !neutrals (nn): O,N2,O2,H,N,NO
   
   end subroutine glow_run
 
